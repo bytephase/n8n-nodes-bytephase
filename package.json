@@ -1,0 +1,62 @@
+{
+	"name": "n8n-nodes-bytephase",
+	"version": "0.1.0",
+	"description": "n8n community node for BytePhase repair shop management software — create leads and device self check-ins from any workflow.",
+	"keywords": [
+		"n8n-community-node-package",
+		"bytephase",
+		"repair shop software",
+		"repair shop management",
+		"crm",
+		"leads",
+		"self check-in"
+	],
+	"license": "MIT",
+	"homepage": "https://bytephase.com/integrations/n8n/",
+	"author": {
+		"name": "BytePhase Technologies Private Limited",
+		"email": "support@bytephase.com"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/bytephase/n8n-nodes-bytephase.git"
+	},
+	"engines": {
+		"node": ">=18.10"
+	},
+	"main": "index.js",
+	"scripts": {
+		"build": "tsc && gulp build:icons",
+		"dev": "tsc --watch",
+		"lint": "eslint nodes credentials package.json",
+		"lintfix": "eslint nodes credentials package.json --fix",
+		"prepublishOnly": "npm run build"
+	},
+	"files": [
+		"dist",
+		"index.js",
+		"LICENSE.md",
+		"README.md"
+	],
+	"n8n": {
+		"n8nNodesApiVersion": 1,
+		"credentials": [
+			"dist/credentials/BytePhaseApi.credentials.js"
+		],
+		"nodes": [
+			"dist/nodes/BytePhase/BytePhase.node.js"
+		]
+	},
+	"devDependencies": {
+		"@typescript-eslint/parser": "^7.15.0",
+		"eslint": "^8.56.0",
+		"eslint-plugin-n8n-nodes-base": "^1.16.0",
+		"gulp": "^4.0.2",
+		"n8n-workflow": "^1.82.0",
+		"prettier": "^3.3.2",
+		"typescript": "^5.5.3"
+	},
+	"peerDependencies": {
+		"n8n-workflow": "*"
+	}
+}
