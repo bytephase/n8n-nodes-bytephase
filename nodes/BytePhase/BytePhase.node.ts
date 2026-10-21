@@ -1,12 +1,9 @@
 import type {
 	FieldType,
-	ICredentialsDecrypted,
-	ICredentialTestFunctions,
 	IDataObject,
 	IExecuteFunctions,
 	IHttpRequestOptions,
 	ILoadOptionsFunctions,
-	INodeCredentialTestResult,
 	INodeExecutionData,
 	INodePropertyOptions,
 	INodeType,
@@ -15,16 +12,15 @@ import type {
 	ResourceMapperFields,
 	ResourceMapperValue,
 } from 'n8n-workflow';
-import { NodeApiError, NodeOperationError } from 'n8n-workflow';
+import { NodeApiError, NodeConnectionTypes, NodeOperationError } from 'n8n-workflow';
 
 interface BytePhaseCredentials {
 	baseUrl: string;
 	apiKey: string;
 }
 
-function buildHeaders(credentials: BytePhaseCredentials): IDataObject {
+function buildHeaders(): IDataObject {
 	return {
-		Authorization: `Bearer ${credentials.apiKey}`,
 		Accept: 'application/json',
 		'Content-Type': 'application/json',
 	};
@@ -128,13 +124,12 @@ export class BytePhase implements INodeType {
 			name: 'BytePhase',
 		},
 		usableAsTool: true,
-		inputs: ['main'],
-		outputs: ['main'],
+		inputs: [NodeConnectionTypes.Main],
+		outputs: [NodeConnectionTypes.Main],
 		credentials: [
 			{
 				name: 'bytePhaseApi',
 				required: true,
-				testedBy: 'bytePhaseApiTest',
 			},
 		],
 		properties: [
@@ -525,11 +520,11 @@ export class BytePhase implements INodeType {
 				const resource = this.getNodeParameter('resource', 0) as string;
 				const formType = CUSTOM_FIELD_FORM_TYPES[resource] ?? CUSTOM_FIELD_FORM_TYPES.lead;
 
-				const response = (await this.helpers.request({
+				const response = (await this.helpers.httpRequestWithAuthentication.call(this, 'bytePhaseApi', {
 					method: 'GET',
 					url: apiUrl(credentials, '/integrations/custom-fields'),
 					qs: { form_type: formType },
-					headers: buildHeaders(credentials) as Record<string, string>,
+					headers: buildHeaders(),
 					json: true,
 				})) as { fields?: BytePhaseCustomField[] };
 
@@ -541,65 +536,6 @@ export class BytePhase implements INodeType {
 					fields,
 					emptyFieldsNotice: `No custom fields are defined for "${formType}" in BytePhase. Add them under Settings → Custom Fields, then reload this list.`,
 				};
-			},
-		},
-
-		credentialTest: {
-			async bytePhaseApiTest(
-				this: ICredentialTestFunctions,
-				credential: ICredentialsDecrypted,
-			): Promise<INodeCredentialTestResult> {
-				const credentials = credential.data as unknown as BytePhaseCredentials;
-				if (!credentials?.baseUrl || !credentials?.apiKey) {
-					return { status: 'Error', message: 'Base URL and API Key are required.' };
-				}
-				// Ping confirms the key, the host and the workspace in one request, and creates nothing.
-				try {
-					const response = (await this.helpers.request({
-						method: 'GET',
-						url: apiUrl(credentials, '/integrations/ping'),
-						headers: buildHeaders(credentials) as Record<string, string>,
-						json: true,
-					})) as { workspace?: string };
-					return {
-						status: 'OK',
-						message: response?.workspace
-							? `Connected to ${response.workspace}.`
-							: 'Connected to BytePhase.',
-					};
-				} catch (error) {
-					const statusCode =
-						(error as { statusCode?: number }).statusCode ??
-						(error as { response?: { status?: number } }).response?.status;
-					if (statusCode === 401) {
-						return { status: 'Error', message: 'Invalid or inactive API key.' };
-					}
-					if (statusCode === 403) {
-						return {
-							status: 'Error',
-							message:
-								'This API key is not allowed here — create the integration as type "n8n" in BytePhase.',
-						};
-					}
-					if (statusCode === 412) {
-						return {
-							status: 'Error',
-							message:
-							'Workspace not found — check the Base URL. It must be your workspace API address, e.g. https://harbor-repair.api.bytephase.com/api.',
-						};
-					}
-					if (statusCode === 404) {
-						return {
-							status: 'Error',
-							message:
-								'Not found — the Base URL must end in /api and point at the API host, e.g. https://harbor-repair.api.bytephase.com/api.',
-						};
-					}
-					return {
-						status: 'Error',
-						message: `Connection failed: ${(error as Error).message}`,
-					};
-				}
 			},
 		},
 	};
@@ -703,7 +639,7 @@ export class BytePhase implements INodeType {
 				if (options.formId) body.form_id = options.formId;
 				if (options.businessId) body.business_id = Number(options.businessId);
 
-				const headers = buildHeaders(credentials);
+				const headers = buildHeaders();
 				if (options.idempotencyKey) {
 					headers['Idempotency-Key'] = options.idempotencyKey;
 				}
@@ -716,7 +652,11 @@ export class BytePhase implements INodeType {
 					json: true,
 				};
 
-				const response = (await this.helpers.httpRequest(requestOptions)) as IDataObject;
+				const response = (await this.helpers.httpRequestWithAuthentication.call(
+					this,
+					'bytePhaseApi',
+					requestOptions,
+				)) as IDataObject;
 
 				returnData.push({
 					json: response ?? { status: 'received' },
@@ -733,7 +673,7 @@ export class BytePhase implements INodeType {
 					continue;
 				}
 				if (error instanceof NodeOperationError) {
-					throw error;
+					throw new NodeOperationError(this.getNode(), error, { itemIndex: i });
 				}
 				throw new NodeApiError(this.getNode(), error as never, {
 					itemIndex: i,

@@ -1,5 +1,6 @@
 import type {
 	IAuthenticateGeneric,
+	Icon,
 	ICredentialTestRequest,
 	ICredentialType,
 	INodeProperties,
@@ -9,6 +10,8 @@ export class BytePhaseApi implements ICredentialType {
 	name = 'bytePhaseApi';
 
 	displayName = 'BytePhase API';
+
+	icon: Icon = 'file:../nodes/BytePhase/bytephase.svg';
 
 	documentationUrl = 'https://developers.bytephase.com';
 

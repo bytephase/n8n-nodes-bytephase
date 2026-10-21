@@ -175,15 +175,15 @@ Add a **BytePhase** node → **Credential to connect with → Create new** → p
 **Save**.
 
 Saving calls `GET /integrations/ping`, which creates nothing and confirms the key, the host and the
-workspace in one request. A success message names your workspace. A failure tells you which of the
-three is wrong:
+workspace in one request. A failure shows the HTTP status, which tells you which of the three is
+wrong:
 
-| Message | Cause |
+| Status | Cause |
 |---|---|
-| *Invalid or inactive API key* | wrong, revoked or expired key |
-| *This API key is not allowed here* | the key belongs to a different integration type — create it under **n8n** |
-| *Workspace not found* | the Base URL host is not a real workspace |
-| *Not found — the Base URL must end in /api* | the Base URL points at the web app, not the API |
+| `401` | wrong, revoked or expired key |
+| `403` | the key belongs to a different integration type — create it under **n8n** |
+| `412` | the Base URL host is not a real workspace |
+| `404` | the Base URL points at the web app, not the API — it must end in `/api` |
 
 ---
 
@@ -551,7 +551,7 @@ docker exec -w /home/node/.n8n/nodes <n8n-container> \
 ### 14.1 Verify the credential
 
 Saving the credential calls `GET /integrations/ping`. It creates nothing, so run it as often as you
-like. Success names your workspace.
+like.
 
 ### 14.2 Execute the node
 
@@ -586,7 +586,7 @@ check you are looking at the right business within the workspace.
 | **Map Automatically** with matching keys on the input item | those fields are filled; unmatched keys are ignored |
 | A record type with no custom fields defined | the section says so rather than showing an empty box |
 | **Business ID** set to a non-existent id | *Business not found.* |
-| Wrong API key | *Invalid or inactive API key.* |
+| Wrong API key | credential test fails with `401` |
 | Base URL set to the sign-in address | credential test fails asking for the `/api` host |
 | Device Model not in your catalogue | succeeds — kept verbatim on the record |
 
