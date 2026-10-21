@@ -615,10 +615,18 @@ Publishing is automated. `.github/workflows/release.yml` runs on a `v*` tag and 
 [provenance](https://docs.npmjs.com/generating-provenance-statements), which n8n has required for
 community nodes since May 2026.
 
-One-time setup on npmjs.com: **package → Settings → Publishing access → Trusted Publishers** → add
-this GitHub repository and the `release.yml` workflow.
+CI runs on Node 24: `n8n-workflow` pulls in `isolated-vm`, which needs Node ≥ 22 and fails to
+install on Node 20.
 
-To cut a release:
+First publish (the package must exist before Trusted Publishing can be configured):
+
+1. On npmjs.com create a **granular access token** with publish rights and save it as the
+   `NPM_TOKEN` secret in this GitHub repository.
+2. Tag the current version: `git tag v0.1.0 && git push --tags`.
+3. On npmjs.com: **package → Settings → Publishing access → Trusted Publishers** → add this
+   GitHub repository and the `release.yml` workflow, then delete the `NPM_TOKEN` secret.
+
+To cut a later release:
 
 ```bash
 npm version patch          # or minor / major
